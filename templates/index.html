@@ -1,0 +1,113 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Gender Classification</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-md mx-auto bg-white rounded-lg shadow-lg p-6">
+            <h1 class="text-2xl font-bold text-center mb-6">Voice Gender Classification</h1>
+            
+            <div class="mb-6">
+                <div class="flex items-center justify-center w-full">
+                    <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <svg class="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                            </svg>
+                            <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
+                            <p class="text-xs text-gray-500">WAV files only</p>
+                        </div>
+                        <input id="file-upload" type="file" class="hidden" accept=".wav" />
+                    </label>
+                </div>
+            </div>
+
+            <div id="selected-file" class="mb-4 text-center text-gray-600 hidden">
+                Selected file: <span id="filename"></span>
+            </div>
+
+            <button id="predict-btn" class="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                Predict Gender
+            </button>
+
+            <div id="result" class="mt-6 text-center hidden">
+                <div class="mb-2">
+                    <span class="font-bold">Predicted Gender:</span>
+                    <span id="gender" class="ml-2"></span>
+                </div>
+                <div>
+                    <span class="font-bold">Confidence:</span>
+                    <span id="confidence" class="ml-2"></span>
+                </div>
+            </div>
+
+            <div id="error" class="mt-4 text-red-500 text-center hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        const fileUpload = document.getElementById('file-upload');
+        const selectedFile = document.getElementById('selected-file');
+        const filename = document.getElementById('filename');
+        const predictBtn = document.getElementById('predict-btn');
+        const result = document.getElementById('result');
+        const gender = document.getElementById('gender');
+        const confidence = document.getElementById('confidence');
+        const error = document.getElementById('error');
+
+        fileUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                filename.textContent = file.name;
+                selectedFile.classList.remove('hidden');
+                predictBtn.disabled = false;
+                result.classList.add('hidden');
+                error.classList.add('hidden');
+            }
+        });
+
+        predictBtn.addEventListener('click', async () => {
+            const file = fileUpload.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            predictBtn.disabled = true;
+            predictBtn.textContent = 'Processing...';
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    result.classList.remove('hidden');
+                    error.classList.add('hidden');
+                    gender.textContent = data.prediction;
+                    confidence.textContent = data.confidence;
+                } else {
+                    error.textContent = data.error;
+                    error.classList.remove('hidden');
+                    result.classList.add('hidden');
+                }
+            } catch (err) {
+                error.textContent = 'An error occurred while processing the request';
+                error.classList.remove('hidden');
+                result.classList.add('hidden');
+            }
+
+            predictBtn.disabled = false;
+            predictBtn.textContent = 'Predict Gender';
+        });
+    </script>
+</body>
+</html>
